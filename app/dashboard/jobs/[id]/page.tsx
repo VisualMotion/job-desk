@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Navbar from "@/components/Navbar";
 import FileUploader from "@/components/FileUploader";
-
+import DownloadAllButton from "@/components/DownloadAllButton";
 const STATUS_LABEL: Record<string, string> = {
   UPLOADED: "Waiting for supplier",
   IN_PROGRESS: "In progress",
@@ -134,7 +134,10 @@ export default function JobDetailPage() {
         </div>
 
         <section className="mb-6">
-          <h2 className="font-display font-semibold text-ink mb-2">Raw photos</h2>
+          <div className="flex items-center justify-between mb-2">
+    <h2 className="font-display font-semibold text-ink">Raw photos</h2>
+    <DownloadAllButton jobId={job.id} kind="RAW" reference={job.reference} fileCount={rawFiles.length} />
+  </div>
           <FileList files={rawFiles} onDownload={download} />
           {canUploadRaw && (
             <div className="mt-3">
@@ -144,8 +147,17 @@ export default function JobDetailPage() {
         </section>
 
         <section className="mb-6">
-          <h2 className="font-display font-semibold text-ink mb-2">Edited photos</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-display font-semibold text-ink">Edited photos</h2>
+            <DownloadAllButton jobId={job.id} kind="EDITED" reference={job.reference} fileCount={editedFiles.length} />
+          </div>
           <FileList files={editedFiles} onDownload={download} />
+          {canUploadEdited && (
+            <div className="mt-3">
+              <FileUploader jobId={job.id} kind="EDITED" onUploaded={load} />
+            </div>
+          )}
+        </section>
           {canUploadEdited && (
             <div className="mt-3">
               <FileUploader jobId={job.id} kind="EDITED" onUploaded={load} />
