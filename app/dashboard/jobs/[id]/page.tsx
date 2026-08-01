@@ -21,6 +21,8 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<any>(null);
   const [notFound, setNotFound] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingAll, setDeletingAll] = useState<"RAW" | "EDITED" | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/jobs/${id}`);
@@ -46,6 +48,25 @@ export default function JobDetailPage() {
     a.href = url;
     a.download = filename;
     a.click();
+  }
+
+  async function deleteFile(fileId: string, filename: string) {
+    if (!confirm(`Delete "${filename}"? This can't be undone.`)) return;
+    setDeletingId(fileId);
+    await fetch(`/api/jobs/${id}/files/${fileId}`, { method: "DELETE" });
+    setDeletingId(null);
+    load();
+  }
+
+  async function deleteAll(kind: "RAW" | "EDITED", count: number) {
+    if (!confirm(`Delete all ${count} file(s) in this folder? This can't be undone.`)) return;
+    setDeletingAll(kind);
+    await fetch(`/api/jobs/${id}/files`, {
+      method: "DELETE",
+      body: JSON.stringify({ kind }),
+    });
+    setDeletingAll(null);
+    load();
   }
 
   async function markComplete() {
@@ -89,7 +110,9 @@ export default function JobDetailPage() {
   const editedFiles = job.files.filter((f: any) => f.kind === "EDITED");
 
   const canUploadRaw = (role === "OWNER" || role === "CONTRACTOR") && job.status !== "COMPLETED";
+  const canManageRaw = role === "OWNER" || role === "CONTRACTOR";
   const canUploadEdited = role === "SUPPLIER" && job.status !== "COMPLETED";
+  const canManageEdited = role === "OWNER" || role === "SUPPLIER";
 
   return (
     <>
@@ -135,9 +158,25 @@ export default function JobDetailPage() {
         <section className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-display font-semibold text-ink">Raw photos</h2>
-            <DownloadAllButton jobId={job.id} kind="RAW" reference={job.reference} fileCount={rawFiles.length} />
+            <div className="flex items-center gap-3">
+              <DownloadAllButton jobId={job.id} kind="RAW" reference={job.reference} fileCount={rawFiles.length} />
+              {canManageRaw && rawFiles.length > 0 && (
+                <button
+                  onClick={() => deleteAll("RAW", rawFiles.length)}
+                  disabled={deletingAll === "RAW"}
+                  className="text-xs font-medium text-rust hover:underline disabled:opacity-60"
+                >
+                  {deletingAll === "RAW" ? "Deleting…" : "Delete all"}
+                </button>
+              )}
+            </div>
           </div>
-          <FileList files={rawFiles} onDownload={download} />
+          <FileList
+            files={rawFiles}
+            onDownload={download}
+            onDelete={canManageRaw ? deleteFile : undefined}
+            deletingId={deletingId}
+          />
           {canUploadRaw && (
             <div className="mt-3">
               <FileUploader jobId={job.id} kind="RAW" onUploaded={load} />
@@ -148,9 +187,25 @@ export default function JobDetailPage() {
         <section className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-display font-semibold text-ink">Edited photos</h2>
-            <DownloadAllButton jobId={job.id} kind="EDITED" reference={job.reference} fileCount={editedFiles.length} />
+            <div className="flex items-center gap-3">
+              <DownloadAllButton jobId={job.id} kind="EDITED" reference={job.reference} fileCount={editedFiles.length} />
+              {canManageEdited && editedFiles.length > 0 && (
+                <button
+                  onClick={() => deleteAll("EDITED", editedFiles.length)}
+                  disabled={deletingAll === "EDITED"}
+                  className="text-xs font-medium text-rust hover:underline disabled:opacity-60"
+                >
+                  {deletingAll === "EDITED" ? "Deleting…" : "Delete all"}
+                </button>
+              )}
+            </div>
           </div>
-          <FileList files={editedFiles} onDownload={download} />
+          <FileList
+            files={editedFiles}
+            onDownload={download}
+            onDelete={canManageEdited ? deleteFile : undefined}
+            deletingId={deletingId}
+          />
           {canUploadEdited && (
             <div className="mt-3">
               <FileUploader jobId={job.id} kind="EDITED" onUploaded={load} />
@@ -172,7 +227,17 @@ export default function JobDetailPage() {
   );
 }
 
-function FileList({ files, onDownload }: { files: any[]; onDownload: (id: string, name: string) => void }) {
+function FileList({
+  files,
+  onDownload,
+  onDelete,
+  deletingId,
+}: {
+  files: any[];
+  onDownload: (id: string, name: string) => void;
+  onDelete?: (id: string, name: string) => void;
+  deletingId: string | null;
+}) {
   if (files.length === 0) {
     return <p className="text-sm text-ink-soft italic">None yet.</p>;
   }
@@ -181,9 +246,20 @@ function FileList({ files, onDownload }: { files: any[]; onDownload: (id: string
       {files.map((f) => (
         <li key={f.id} className="flex items-center justify-between px-4 py-2 text-sm">
           <span className="text-ink truncate">{f.filename}</span>
-          <button onClick={() => onDownload(f.id, f.filename)} className="text-brass-deep hover:underline text-xs shrink-0 ml-3">
-            Download
-          </button>
+          <span className="flex items-center gap-3 shrink-0 ml-3">
+            <button onClick={() => onDownload(f.id, f.filename)} className="text-brass-deep hover:underline text-xs">
+              Download
+            </button>
+            {onDelete && (
+              <button
+                onClick={() => onDelete(f.id, f.filename)}
+                disabled={deletingId === f.id}
+                className="text-rust hover:underline text-xs disabled:opacity-60"
+              >
+                {deletingId === f.id ? "Deleting…" : "Delete"}
+              </button>
+            )}
+          </span>
         </li>
       ))}
     </ul>

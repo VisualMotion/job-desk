@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
@@ -40,4 +40,8 @@ export async function getDownloadUrl(key: string, downloadFilename?: string) {
       : undefined,
   });
   return getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes
+}
+
+export async function deleteObject(key: string) {
+  await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
