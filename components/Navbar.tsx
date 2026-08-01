@@ -10,7 +10,11 @@ type Notif = {
   read: boolean;
   job: { reference: string; status: string };
 };
-
+const ROLE_LABEL: Record<string, string> = {
+  OWNER: "OWNER",
+  SUPPLIER: "SUPPLIER",
+  CONTRACTOR: "VM TEAM MEMBER",
+};
 export default function Navbar() {
   const { data: session } = useSession();
   const [notifs, setNotifs] = useState<Notif[]>([]);
@@ -43,7 +47,7 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           {role && (
             <span className="font-mono text-[10px] tracking-widest uppercase text-ink-soft border border-line rounded px-2 py-1">
-              {role}
+              {ROLE_LABEL[role] ?? role}
             </span>
           )}
 

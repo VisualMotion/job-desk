@@ -65,7 +65,7 @@ export default function UsersAdminPage() {
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-8">
         <h1 className="font-display text-2xl font-bold text-ink mb-1">Accounts</h1>
         <p className="text-sm text-ink-soft mb-6">
-          Suppliers and contractors never see each other's accounts or contact details — this list is
+          Suppliers and VM team members never see each other's accounts or contact details — this list is
           only visible to you.
         </p>
 
@@ -93,7 +93,7 @@ export default function UsersAdminPage() {
               className="rounded-md border border-line px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brass"
             >
               <option value="SUPPLIER">Supplier (editor)</option>
-              <option value="CONTRACTOR">Contractor (photographer)</option>
+              <option value="CONTRACTOR">VM Team Member</option>
             </select>
             <input
               required
@@ -128,7 +128,7 @@ export default function UsersAdminPage() {
             </ul>
           </div>
           <div>
-            <h3 className="font-display font-semibold text-ink mb-2">Contractors</h3>
+            <h3 className="font-display font-semibold text-ink mb-2">VM Team Members</h3>
             <ul className="space-y-2">
               {contractors.map((u) => (
                 <li key={u.id} className="text-sm bg-paper-raised border border-line rounded-md px-3 py-2">
