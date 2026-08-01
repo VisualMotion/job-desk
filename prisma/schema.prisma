@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  SUPPLIER
+  CONTRACTOR
+}
+
+enum JobStatus {
+  UPLOADED     // raw files uploaded, waiting for supplier
+  IN_PROGRESS  // supplier has opened/started the job
+  COMPLETED    // supplier has delivered edited files
+}
+
+enum FileKind {
+  RAW
+  EDITED
+}
+
+enum NotificationType {
+  NEW_JOB
+  JOB_COMPLETED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  // Jobs this user created (as OWNER or CONTRACTOR)
+  jobsCreated  Job[]          @relation("JobCreator")
+  // Jobs assigned to this user (as SUPPLIER)
+  jobsAssigned Job[]          @relation("JobSupplier")
+  filesUploaded JobFile[]
+  notifications Notification[]
+}
+
+model Job {
+  id            String    @id @default(cuid())
+  reference     String    @unique // e.g. JOB-2026-0001, the only label suppliers/contractors see
+  title         String    // internal label, e.g. property address - visible to owner & creator only
+  status        JobStatus @default(UPLOADED)
+
+  createdById   String
+  createdBy     User      @relation("JobCreator", fields: [createdById], references: [id])
+
+  supplierId    String
+  supplier      User      @relation("JobSupplier", fields: [supplierId], references: [id])
+
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  completedAt   DateTime?
+
+  files         JobFile[]
+  notifications Notification[]
+
+  @@index([createdById])
+  @@index([supplierId])
+}
+
+model JobFile {
+  id           String   @id @default(cuid())
+  jobId        String
+  job          Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  kind         FileKind
+  filename     String
+  storageKey   String   // key in R2 bucket
+  sizeBytes    Int?
+  contentType  String?
+
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+
+  createdAt    DateTime @default(now())
+
+  @@index([jobId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  jobId     String
+  job       Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
