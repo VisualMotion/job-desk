@@ -95,6 +95,11 @@ export default function Navbar() {
           )}
 
           <Link href="/dashboard/account" className="text-sm text-ink-soft hover:text-ink">
+          {role === "OWNER" && (
+            <Link href="/dashboard/admin/cleanup" className="text-sm text-ink-soft hover:text-ink">
+              Cleanup
+            </Link>
+          )}
             Account
           </Link>
 
