@@ -182,7 +182,7 @@ export default function JobDetailPage() {
           />
           {canUploadRaw && (
             <div className="mt-3">
-              <<FileUploader jobId={job.id} kind="RAW" onUploaded={afterRawUpload} />
+              <FileUploader jobId={job.id} kind="RAW" onUploaded={afterRawUpload} />
             </div>
           )}
         </section>
