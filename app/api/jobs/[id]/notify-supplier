@@ -1,0 +1,26 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { SessionUser } from "@/lib/access";
+import { sendNewJobEmail } from "@/lib/email";
+
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const viewer = session.user as unknown as SessionUser;
+  const { id: jobId } = await params;
+
+  const job = await prisma.job.findUnique({ where: { id: jobId }, include: { supplier: true } });
+  if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const allowed = viewer.role === "OWNER" || job.createdById === viewer.id;
+  if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  await prisma.notification.create({
+    data: { userId: job.supplierId, jobId: job.id, type: "NEW_JOB" },
+  });
+
+  await sendNewJobEmail(job.supplier.email, job.supplier.name, job.reference).catch(() => {});
+
+  return NextResponse.json({ ok: true });
+}
