@@ -44,6 +44,7 @@ model User {
   jobsAssigned Job[]          @relation("JobSupplier")
   filesUploaded JobFile[]
   notifications Notification[]
+  resetTokens   PasswordResetToken[]
 }
 
 model Job {
@@ -51,6 +52,7 @@ model Job {
   reference     String    @unique // e.g. JOB-2026-0001, the only label suppliers/contractors see
   title         String    // internal label, e.g. property address - visible to owner & creator only
   status        JobStatus @default(UPLOADED)
+  dueDate       DateTime?
 
   createdById   String
   createdBy     User      @relation("JobCreator", fields: [createdById], references: [id])
@@ -68,6 +70,17 @@ model Job {
 
   @@index([createdById])
   @@index([supplierId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model JobFile {

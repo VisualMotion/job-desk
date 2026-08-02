@@ -9,6 +9,7 @@ export default function NewJobForm() {
   const [title, setTitle] = useState("");
   const [supplierId, setSupplierId] = useState("");
   const [notes, setNotes] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -24,7 +25,7 @@ export default function NewJobForm() {
     setSubmitting(true);
     const res = await fetch("/api/jobs", {
       method: "POST",
-      body: JSON.stringify({ title, supplierId, notes }),
+      body: JSON.stringify({ title, supplierId, notes, dueDate: dueDate || undefined }),
     });
     setSubmitting(false);
     if (res.ok) {
@@ -84,6 +85,16 @@ export default function NewJobForm() {
             </option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-ink-soft mb-1">Due date (optional)</label>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brass"
+        />
       </div>
 
       <div>

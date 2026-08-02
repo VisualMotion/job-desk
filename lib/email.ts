@@ -5,7 +5,7 @@ const FROM = process.env.EMAIL_FROM || "portal@example.com";
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 
 export async function sendNewJobEmail(to: string, name: string, jobReference: string) {
-  if (!resend) return; // no-op if email isn't configured yet, so the app still works
+  if (!resend) return;
   await resend.emails.send({
     from: FROM,
     to,
@@ -28,6 +28,21 @@ export async function sendJobCompletedEmail(to: string, name: string, jobReferen
       <p>Hi ${name},</p>
       <p>Job <strong>${jobReference}</strong> has been edited and the files are ready.</p>
       <p><a href="${APP_URL}/dashboard">Log in to the portal</a> to download the finished files.</p>
+    `,
+  });
+}
+
+export async function sendPasswordResetEmail(to: string, name: string, resetUrl: string) {
+  if (!resend) return;
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: "Reset your Job Desk password",
+    html: `
+      <p>Hi ${name},</p>
+      <p>Someone requested a password reset for your Job Desk account. If this was you, click below to choose a new password. This link expires in 1 hour.</p>
+      <p><a href="${resetUrl}">Reset your password</a></p>
+      <p>If you didn't request this, you can safely ignore this email.</p>
     `,
   });
 }

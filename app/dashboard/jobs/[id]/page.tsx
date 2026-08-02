@@ -68,10 +68,12 @@ export default function JobDetailPage() {
     setDeletingAll(null);
     load();
   }
-    async function afterRawUpload() {
+
+  async function afterRawUpload() {
     await fetch(`/api/jobs/${id}/notify-supplier`, { method: "POST" });
     load();
   }
+
   async function markComplete() {
     setUpdating(true);
     await fetch(`/api/jobs/${id}/status`, {
@@ -149,6 +151,15 @@ export default function JobDetailPage() {
               <div>
                 <dt className="text-ink-soft text-xs">Editing supplier</dt>
                 <dd className="text-ink">{job.supplier.name}</dd>
+              </div>
+            )}
+            {job.dueDate && (
+              <div>
+                <dt className="text-ink-soft text-xs">Due date</dt>
+                <dd className={job.status !== "COMPLETED" && new Date(job.dueDate) < new Date() ? "text-rust font-medium" : "text-ink"}>
+                  {new Date(job.dueDate).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}
+                  {job.status !== "COMPLETED" && new Date(job.dueDate) < new Date() ? " (overdue)" : ""}
+                </dd>
               </div>
             )}
           </dl>
@@ -230,10 +241,6 @@ export default function JobDetailPage() {
   );
 }
 
-// Files uploaded via "Select folder" carry their folder path in the filename
-// (e.g. "Bracketed-Exteriors/IMG_001.jpg"). Group those by top-level folder so a
-// 150-photo shoot shows as one row, not 150. Files with no "/" (picked individually)
-// show as their own row as before.
 function groupFiles(files: any[]) {
   const folders = new Map<string, any[]>();
   const loose: any[] = [];

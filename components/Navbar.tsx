@@ -10,11 +10,13 @@ type Notif = {
   read: boolean;
   job: { reference: string; status: string };
 };
+
 const ROLE_LABEL: Record<string, string> = {
   OWNER: "OWNER",
   SUPPLIER: "SUPPLIER",
   CONTRACTOR: "VM TEAM MEMBER",
 };
+
 export default function Navbar() {
   const { data: session } = useSession();
   const [notifs, setNotifs] = useState<Notif[]>([]);
@@ -91,6 +93,10 @@ export default function Navbar() {
               Accounts
             </Link>
           )}
+
+          <Link href="/dashboard/account" className="text-sm text-ink-soft hover:text-ink">
+            Account
+          </Link>
 
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

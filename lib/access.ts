@@ -3,19 +3,14 @@ import { Prisma, Role } from "@prisma/client";
 
 export type SessionUser = { id: string; role: Role; name: string; email: string };
 
-/**
- * Returns the Prisma `where` clause that scopes the jobs a given user is allowed
- * to see at all. This is the enforcement point for "my jobs are separated from
- * the contractors' jobs" and "suppliers only see their assigned jobs."
- */
 export function jobScopeFor(user: SessionUser): Prisma.JobWhereInput {
   switch (user.role) {
     case "OWNER":
-      return {}; // owner sees everything
+      return {};
     case "CONTRACTOR":
-      return { createdById: user.id }; // only jobs they personally submitted
+      return { createdById: user.id };
     case "SUPPLIER":
-      return { supplierId: user.id }; // only jobs assigned to them
+      return { supplierId: user.id };
   }
 }
 
@@ -29,11 +24,6 @@ const jobWithRelations = Prisma.validator<Prisma.JobDefaultArgs>()({
 export type JobWithRelations = Prisma.JobGetPayload<typeof jobWithRelations>;
 export const jobInclude = jobWithRelations.include;
 
-/**
- * Strips identity fields depending on who is looking at the job. This is what
- * enforces "no details of the suppliers can be visible to the contractors and
- * vice versa" at the data layer, not just in the UI.
- */
 export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser) {
   const base = {
     id: job.id,
@@ -42,6 +32,7 @@ export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
     completedAt: job.completedAt,
+    dueDate: job.dueDate,
     notes: job.notes,
     files: job.files.map((f) => ({
       id: f.id,
@@ -53,7 +44,6 @@ export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser
   };
 
   if (viewer.role === "OWNER") {
-    // Owner is the only party who legitimately sees both sides.
     return {
       ...base,
       title: job.title,
@@ -63,7 +53,6 @@ export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser
   }
 
   if (viewer.role === "CONTRACTOR") {
-    // Never reveal which supplier is editing the job, or any supplier detail.
     return {
       ...base,
       title: job.title,
@@ -72,8 +61,6 @@ export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser
     };
   }
 
-  // SUPPLIER: never reveal who created the job beyond a generic label -
-  // in particular, never reveal a contractor's identity.
   return {
     ...base,
     title: null,
@@ -87,6 +74,6 @@ export async function getJobForViewer(jobId: string, viewer: SessionUser) {
     where: { id: jobId, ...jobScopeFor(viewer) },
     include: jobInclude,
   });
-  if (!job) return null; // scoping means "not visible" and "doesn't exist" look identical
+  if (!job) return null;
   return serializeJobForViewer(job, viewer);
 }

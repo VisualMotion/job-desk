@@ -23,6 +23,7 @@ const createJobSchema = z.object({
   title: z.string().min(1),
   supplierId: z.string().min(1),
   notes: z.string().optional(),
+  dueDate: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -30,7 +31,6 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const viewer = session.user as unknown as SessionUser;
 
-  // Only owner and contractors submit jobs; suppliers receive them.
   if (viewer.role !== "OWNER" && viewer.role !== "CONTRACTOR") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { title, supplierId, notes } = parsed.data;
+  const { title, supplierId, notes, dueDate } = parsed.data;
 
   const supplier = await prisma.user.findUnique({ where: { id: supplierId } });
   if (!supplier || supplier.role !== "SUPPLIER" || !supplier.active) {
@@ -57,6 +57,7 @@ export async function POST(req: Request) {
       notes,
       createdById: viewer.id,
       supplierId,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
     },
     include: jobInclude,
   });
