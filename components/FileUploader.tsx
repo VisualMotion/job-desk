@@ -107,10 +107,13 @@ export default function FileUploader({
     <div>
       <div className="flex flex-wrap items-center gap-3">
         <label className="inline-flex items-center bg-ink text-paper rounded-md px-3 py-2 text-sm font-medium hover:bg-ink-soft cursor-pointer">
-          Select files
+          Select folder
           <input
-            ref={filesInputRef}
+            ref={folderInputRef}
             type="file"
+            // @ts-ignore - non-standard but supported attributes for folder selection
+            webkitdirectory=""
+            directory=""
             multiple
             onChange={(e) => handleFiles(e.target.files)}
             disabled={uploading}
@@ -119,13 +122,10 @@ export default function FileUploader({
         </label>
 
         <label className="inline-flex items-center border border-line text-ink rounded-md px-3 py-2 text-sm font-medium hover:bg-paper cursor-pointer">
-          Select folder
+          Select files
           <input
-            ref={folderInputRef}
+            ref={filesInputRef}
             type="file"
-            // @ts-ignore - non-standard but supported attributes for folder selection
-            webkitdirectory=""
-            directory=""
             multiple
             onChange={(e) => handleFiles(e.target.files)}
             disabled={uploading}
