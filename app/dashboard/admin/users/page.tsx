@@ -14,6 +14,7 @@ export default function UsersAdminPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch("/api/users");
@@ -44,6 +45,17 @@ export default function UsersAdminPage() {
     load();
   }
 
+  async function toggleActive(id: string, name: string, currentlyActive: boolean) {
+    if (!confirm(`${currentlyActive ? "Deactivate" : "Reactivate"} ${name}? ${currentlyActive ? "They won't be able to log in until reactivated." : "They'll be able to log in again."}`)) return;
+    setTogglingId(id);
+    await fetch(`/api/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ active: !currentlyActive }),
+    });
+    setTogglingId(null);
+    load();
+  }
+
   if (status === "loading") return null;
   if (role !== "OWNER") {
     return (
@@ -66,7 +78,8 @@ export default function UsersAdminPage() {
         <h1 className="font-display text-2xl font-bold text-ink mb-1">Accounts</h1>
         <p className="text-sm text-ink-soft mb-6">
           Suppliers and VM team members never see each other's accounts or contact details — this list is
-          only visible to you.
+          only visible to you. Deactivating an account blocks them from logging in immediately, but keeps
+          their job history intact.
         </p>
 
         <form onSubmit={handleSubmit} className="bg-paper-raised border border-line rounded-lg p-5 space-y-4 mb-8">
@@ -120,9 +133,22 @@ export default function UsersAdminPage() {
             <h3 className="font-display font-semibold text-ink mb-2">Suppliers</h3>
             <ul className="space-y-2">
               {suppliers.map((u) => (
-                <li key={u.id} className="text-sm bg-paper-raised border border-line rounded-md px-3 py-2">
-                  <p className="text-ink">{u.name}</p>
-                  <p className="text-ink-soft text-xs">{u.email}</p>
+                <li key={u.id} className={`text-sm bg-paper-raised border border-line rounded-md px-3 py-2 ${!u.active ? "opacity-60" : ""}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-ink">
+                        {u.name} {!u.active && <span className="text-[10px] font-medium text-rust border border-rust/30 rounded px-1.5 py-0.5 ml-1">Deactivated</span>}
+                      </p>
+                      <p className="text-ink-soft text-xs">{u.email}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleActive(u.id, u.name, u.active)}
+                      disabled={togglingId === u.id}
+                      className={`text-xs font-medium hover:underline shrink-0 disabled:opacity-60 ${u.active ? "text-rust" : "text-moss"}`}
+                    >
+                      {togglingId === u.id ? "…" : u.active ? "Deactivate" : "Reactivate"}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -131,9 +157,22 @@ export default function UsersAdminPage() {
             <h3 className="font-display font-semibold text-ink mb-2">VM Team Members</h3>
             <ul className="space-y-2">
               {contractors.map((u) => (
-                <li key={u.id} className="text-sm bg-paper-raised border border-line rounded-md px-3 py-2">
-                  <p className="text-ink">{u.name}</p>
-                  <p className="text-ink-soft text-xs">{u.email}</p>
+                <li key={u.id} className={`text-sm bg-paper-raised border border-line rounded-md px-3 py-2 ${!u.active ? "opacity-60" : ""}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-ink">
+                        {u.name} {!u.active && <span className="text-[10px] font-medium text-rust border border-rust/30 rounded px-1.5 py-0.5 ml-1">Deactivated</span>}
+                      </p>
+                      <p className="text-ink-soft text-xs">{u.email}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleActive(u.id, u.name, u.active)}
+                      disabled={togglingId === u.id}
+                      className={`text-xs font-medium hover:underline shrink-0 disabled:opacity-60 ${u.active ? "text-rust" : "text-moss"}`}
+                    >
+                      {togglingId === u.id ? "…" : u.active ? "Deactivate" : "Reactivate"}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

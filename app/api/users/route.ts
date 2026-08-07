@@ -23,7 +23,10 @@ export async function GET(req: Request) {
   }
 
   const users = await prisma.user.findMany({
-    where: { role: (roleParam as any) || undefined, active: true },
+    where: {
+      role: (roleParam as any) || undefined,
+      active: viewer.role === "OWNER" ? undefined : true,
+    },
     select: { id: true, name: true, email: true, role: true, active: true, createdAt: true },
     orderBy: { name: "asc" },
   });
