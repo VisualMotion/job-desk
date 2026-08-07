@@ -63,7 +63,7 @@ export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser
 
   return {
     ...base,
-    title: null,
+    title: job.title,
     createdBy: null,
     supplier: { name: job.supplier.name, email: job.supplier.email },
   };
