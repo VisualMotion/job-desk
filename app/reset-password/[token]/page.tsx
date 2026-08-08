@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function ResetPasswordPage() {
   const { token } = useParams<{ token: string }>();
@@ -52,8 +53,7 @@ export default function ResetPasswordPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="bg-paper-raised border border-line rounded-lg p-6 space-y-4 shadow-sm">
-            <input
-              type="password"
+            <PasswordInput
               required
               minLength={8}
               value={password}
@@ -61,8 +61,7 @@ export default function ResetPasswordPage() {
               placeholder="New password (min. 8 characters)"
               className="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brass"
             />
-            <input
-              type="password"
+            <PasswordInput
               required
               minLength={8}
               value={confirm}

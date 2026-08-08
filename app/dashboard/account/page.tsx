@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import Navbar from "@/components/Navbar";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function AccountPage() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -44,16 +45,14 @@ export default function AccountPage() {
 
         <form onSubmit={handleSubmit} className="bg-paper-raised border border-line rounded-lg p-5 space-y-4">
           <h2 className="font-display font-semibold text-ink">Change password</h2>
-          <input
-            type="password"
+          <PasswordInput
             required
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             placeholder="Current password"
             className="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brass"
           />
-          <input
-            type="password"
+          <PasswordInput
             required
             minLength={8}
             value={newPassword}
@@ -61,8 +60,7 @@ export default function AccountPage() {
             placeholder="New password (min. 8 characters)"
             className="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brass"
           />
-          <input
-            type="password"
+          <PasswordInput
             required
             minLength={8}
             value={confirm}

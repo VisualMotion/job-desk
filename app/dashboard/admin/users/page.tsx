@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Navbar from "@/components/Navbar";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function UsersAdminPage() {
   const { data: session, status } = useSession();
@@ -119,7 +120,7 @@ export default function UsersAdminPage() {
                 )}
               </div>
             </div>
-            {rowError && rowError.id === u.id && (
+            {rowError?.id === u.id && (
               <p className="text-xs text-rust mt-2 border-t border-line pt-2">{rowError.message}</p>
             )}
           </li>
@@ -165,9 +166,8 @@ export default function UsersAdminPage() {
               <option value="SUPPLIER">Supplier (editor)</option>
               <option value="CONTRACTOR">VM Team Member</option>
             </select>
-            <input
+            <PasswordInput
               required
-              type="password"
               placeholder="Temporary password"
               minLength={8}
               value={password}
