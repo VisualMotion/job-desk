@@ -29,8 +29,10 @@ export default function LoginPage() {
     <main className="flex-1 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 mb-3">
-            <span className="w-2 h-2 rounded-full bg-brass" />
+          <div className="inline-flex items-center gap-3 mb-3">
+            <span className="bg-ink rounded px-3 py-1.5 flex items-center">
+              <img src="/logo-full.png" alt="Visual Motion" className="h-6 w-auto" />
+            </span>
             <span className="font-mono text-xs tracking-widest text-ink-soft uppercase">
               Job Desk
             </span>

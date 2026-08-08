@@ -42,7 +42,9 @@ export default function Navbar() {
     <header className="border-b border-line bg-paper-raised">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-brass" />
+          <span className="bg-ink rounded px-2 py-1 flex items-center">
+            <img src="/logo-full.png" alt="Visual Motion" className="h-5 w-auto" />
+          </span>
           <span className="font-display font-bold text-ink">Job Desk</span>
         </Link>
 
@@ -94,12 +96,13 @@ export default function Navbar() {
             </Link>
           )}
 
-          <Link href="/dashboard/account" className="text-sm text-ink-soft hover:text-ink">
           {role === "OWNER" && (
             <Link href="/dashboard/admin/cleanup" className="text-sm text-ink-soft hover:text-ink">
               Cleanup
             </Link>
           )}
+
+          <Link href="/dashboard/account" className="text-sm text-ink-soft hover:text-ink">
             Account
           </Link>
 
