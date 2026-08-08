@@ -120,7 +120,7 @@ export default function UsersAdminPage() {
                 )}
               </div>
             </div>
-            {rowError?.id === u.id && (
+            {rowError && rowError.id === u.id && (
               <p className="text-xs text-rust mt-2 border-t border-line pt-2">{rowError.message}</p>
             )}
           </li>
