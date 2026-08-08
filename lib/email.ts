@@ -32,7 +32,19 @@ export async function sendJobCompletedEmail(to: string, name: string, jobReferen
   });
 }
 
-export async function sendPasswordResetEmail(to: string, name: string, resetUrl: string) {
+export async function sendPasswordChangedNotice(to: string, ownerName: string, changedUserName: string, changedUserEmail: string) {
+  if (!resend) return;
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Password changed — ${changedUserName}`,
+    html: `
+      <p>Hi ${ownerName},</p>
+      <p><strong>${changedUserName}</strong> (${changedUserEmail}) just changed their Job Desk password.</p>
+      <p>This is just an FYI - no action needed unless this looks unexpected to you.</p>
+    `,
+  });
+}
   if (!resend) return;
   await resend.emails.send({
     from: FROM,
