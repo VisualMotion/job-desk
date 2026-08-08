@@ -23,6 +23,7 @@ export default function JobDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState<"RAW" | "EDITED" | null>(null);
+  const [deletingJob, setDeletingJob] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/jobs/${id}`);
@@ -84,6 +85,14 @@ export default function JobDetailPage() {
     load();
   }
 
+  async function deleteJob() {
+    if (!job) return;
+    if (!confirm(`Permanently delete job ${job.reference}? This removes all its files and can't be undone.`)) return;
+    setDeletingJob(true);
+    await fetch(`/api/jobs/${id}`, { method: "DELETE" });
+    router.push("/dashboard");
+  }
+
   if (notFound) {
     return (
       <>
@@ -123,9 +132,20 @@ export default function JobDetailPage() {
     <>
       <Navbar />
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-8">
-        <button onClick={() => router.push("/dashboard")} className="text-sm text-ink-soft mb-4">
-          ← Back to jobs
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => router.push("/dashboard")} className="text-sm text-ink-soft">
+            ← Back to jobs
+          </button>
+          {role === "OWNER" && (
+            <button
+              onClick={deleteJob}
+              disabled={deletingJob}
+              className="text-xs font-medium text-rust hover:underline disabled:opacity-60"
+            >
+              {deletingJob ? "Deleting…" : "Delete this job"}
+            </button>
+          )}
+        </div>
 
         <div className="bg-paper-raised border border-line rounded-lg p-6 mb-6">
           <div className="flex items-start justify-between">
