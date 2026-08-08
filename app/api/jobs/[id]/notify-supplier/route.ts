@@ -16,6 +16,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const allowed = viewer.role === "OWNER" || job.createdById === viewer.id;
   if (!allowed) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  if (!job.supplier || !job.supplierId) return NextResponse.json({ ok: true });
+
   await prisma.notification.create({
     data: { userId: job.supplierId, jobId: job.id, type: "NEW_JOB" },
   });

@@ -38,9 +38,7 @@ model User {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
-  // Jobs this user created (as OWNER or CONTRACTOR)
   jobsCreated  Job[]          @relation("JobCreator")
-  // Jobs assigned to this user (as SUPPLIER)
   jobsAssigned Job[]          @relation("JobSupplier")
   filesUploaded JobFile[]
   notifications Notification[]
@@ -49,16 +47,16 @@ model User {
 
 model Job {
   id            String    @id @default(cuid())
-  reference     String    @unique // e.g. JOB-2026-0001, the only label suppliers/contractors see
-  title         String    // internal label, e.g. property address - visible to owner & creator only
+  reference     String    @unique
+  title         String
   status        JobStatus @default(UPLOADED)
   dueDate       DateTime?
 
-  createdById   String
-  createdBy     User      @relation("JobCreator", fields: [createdById], references: [id])
+  createdById   String?
+  createdBy     User?     @relation("JobCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
-  supplierId    String
-  supplier      User      @relation("JobSupplier", fields: [supplierId], references: [id])
+  supplierId    String?
+  supplier      User?     @relation("JobSupplier", fields: [supplierId], references: [id], onDelete: SetNull)
 
   notes         String?
   createdAt     DateTime  @default(now())
@@ -90,12 +88,12 @@ model JobFile {
 
   kind         FileKind
   filename     String
-  storageKey   String   // key in R2 bucket
+  storageKey   String
   sizeBytes    Int?
   contentType  String?
 
-  uploadedById String
-  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 
   createdAt    DateTime @default(now())
 
@@ -105,7 +103,7 @@ model JobFile {
 model Notification {
   id        String           @id @default(cuid())
   userId    String
-  user      User             @relation(fields: [userId], references: [id])
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobId     String
   job       Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
   type      NotificationType

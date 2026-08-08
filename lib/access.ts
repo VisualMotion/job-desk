@@ -47,8 +47,12 @@ export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser
     return {
       ...base,
       title: job.title,
-      createdBy: { name: job.createdBy.name, role: job.createdBy.role },
-      supplier: { name: job.supplier.name, email: job.supplier.email },
+      createdBy: job.createdBy
+        ? { name: job.createdBy.name, role: job.createdBy.role }
+        : { name: "Removed account", role: "CONTRACTOR" as const },
+      supplier: job.supplier
+        ? { name: job.supplier.name, email: job.supplier.email }
+        : { name: "Removed account", email: "" },
     };
   }
 
@@ -56,7 +60,9 @@ export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser
     return {
       ...base,
       title: job.title,
-      createdBy: { name: job.createdBy.name, role: job.createdBy.role },
+      createdBy: job.createdBy
+        ? { name: job.createdBy.name, role: job.createdBy.role }
+        : { name: "Removed account", role: "CONTRACTOR" as const },
       supplier: null,
     };
   }
@@ -65,7 +71,9 @@ export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser
     ...base,
     title: job.title,
     createdBy: null,
-    supplier: { name: job.supplier.name, email: job.supplier.email },
+    supplier: job.supplier
+      ? { name: job.supplier.name, email: job.supplier.email }
+      : { name: "Removed account", email: "" },
   };
 }
 

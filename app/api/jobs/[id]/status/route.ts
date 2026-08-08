@@ -17,7 +17,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  // Only the supplier assigned to this exact job may change its status.
   const job = await prisma.job.findFirst({
     where: { id, supplierId: viewer.role === "SUPPLIER" ? viewer.id : "__none__" },
     include: { createdBy: true },
@@ -35,12 +34,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (parsed.data.status === "COMPLETED") {
     const recipients = new Set<string>();
 
-    // Owner is notified for every completed job, regardless of who created it.
     const owners = await prisma.user.findMany({ where: { role: "OWNER", active: true } });
     for (const owner of owners) recipients.add(owner.id);
 
-    // The contractor who submitted it is notified only for their own job.
-    if (job.createdBy.role === "CONTRACTOR") {
+    if (job.createdBy && job.createdBy.role === "CONTRACTOR") {
       recipients.add(job.createdBy.id);
     }
 
