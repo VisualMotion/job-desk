@@ -33,6 +33,7 @@ export function serializeJobForViewer(job: JobWithRelations, viewer: SessionUser
     updatedAt: job.updatedAt,
     completedAt: job.completedAt,
     dueDate: job.dueDate,
+    rawDownloadedAt: job.rawDownloadedAt,
     notes: job.notes,
     files: job.files.map((f) => ({
       id: f.id,

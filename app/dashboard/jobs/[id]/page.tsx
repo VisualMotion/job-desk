@@ -173,6 +173,17 @@ export default function JobDetailPage() {
                 <dd className="text-ink">{job.supplier.name}</dd>
               </div>
             )}
+            {job.rawDownloadedAt && (
+              <div>
+                <dt className="text-ink-soft text-xs">Raw files downloaded</dt>
+                <dd className="text-moss flex items-center gap-1">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {new Date(job.rawDownloadedAt).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}
+                </dd>
+              </div>
+            )}
             {job.dueDate && (
               <div>
                 <dt className="text-ink-soft text-xs">Due date</dt>

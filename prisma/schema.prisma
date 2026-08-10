@@ -51,6 +51,7 @@ model Job {
   title         String
   status        JobStatus @default(UPLOADED)
   dueDate       DateTime?
+  rawDownloadedAt DateTime?
 
   createdById   String?
   createdBy     User?     @relation("JobCreator", fields: [createdById], references: [id], onDelete: SetNull)

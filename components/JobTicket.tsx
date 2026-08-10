@@ -22,7 +22,16 @@ export default function JobTicket({ job }: { job: any }) {
     >
       <div className="flex-1 p-4">
         <div className="flex items-center justify-between mb-1">
-          <span className="font-mono text-xs text-brass-deep tracking-wide">{job.reference}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="font-mono text-xs text-brass-deep tracking-wide">{job.reference}</span>
+            {job.rawDownloadedAt && (
+              <span title={`Supplier downloaded raw files ${new Date(job.rawDownloadedAt).toLocaleString()}`}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="text-moss">
+                  <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            )}
+          </span>
           <span className="flex items-center gap-2">
             {isOverdue && (
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-rust/10 text-rust">

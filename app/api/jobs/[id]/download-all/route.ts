@@ -19,6 +19,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const job = await prisma.job.findFirst({ where: { id: jobId, ...jobScopeFor(viewer) } });
   if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  if (viewer.role === "SUPPLIER" && parsed.data.kind === "RAW" && !job.rawDownloadedAt) {
+    await prisma.job.update({ where: { id: job.id }, data: { rawDownloadedAt: new Date() } });
+  }
+
   const files = await prisma.jobFile.findMany({
     where: { jobId, kind: parsed.data.kind },
     orderBy: { filename: "asc" },

@@ -21,11 +21,14 @@ export async function POST(req: Request) {
   });
   if (!file) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // The file's job must fall within this viewer's allowed job scope.
   const job = await prisma.job.findFirst({
     where: { id: file.jobId, ...jobScopeFor(viewer) },
   });
   if (!job) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (viewer.role === "SUPPLIER" && file.kind === "RAW" && !job.rawDownloadedAt) {
+    await prisma.job.update({ where: { id: job.id }, data: { rawDownloadedAt: new Date() } });
+  }
 
   const url = await getDownloadUrl(file.storageKey, file.filename);
   return NextResponse.json({ url });
