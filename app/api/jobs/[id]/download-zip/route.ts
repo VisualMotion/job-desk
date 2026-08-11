@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { jobScopeFor, SessionUser } from "@/lib/access";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import archiver from "archiver";
-import { Readable } from "stream";
+import { Readable, PassThrough } from "stream";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -43,6 +43,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const archive = archiver("zip", { store: true });
 
+  const passthrough = new PassThrough();
+  archive.pipe(passthrough);
+  archive.on("error", (err) => {
+    console.error("Archive error:", err);
+    passthrough.destroy(err);
+  });
+
   (async () => {
     for (const f of files) {
       try {
@@ -55,7 +62,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     archive.finalize();
   })();
 
-  const webStream = Readable.toWeb(archive as unknown as Readable) as ReadableStream;
+  const webStream = Readable.toWeb(passthrough) as ReadableStream;
   const safeName = `${job.reference}-${kind.toLowerCase()}`.replace(/[^a-zA-Z0-9.\-_]/g, "_");
 
   return new NextResponse(webStream, {
