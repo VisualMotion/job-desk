@@ -41,28 +41,47 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "No files to download" }, { status: 400 });
   }
 
-  const archive = archiver("zip", { store: true });
+  console.log(`[download-zip] starting: ${files.length} files for job ${job.reference}`);
 
+  const archive = archiver("zip", { store: true });
   const passthrough = new PassThrough();
+
+  let bytesToClient = 0;
+  passthrough.on("data", (chunk) => {
+    bytesToClient += chunk.length;
+    if (bytesToClient % 5_000_000 < chunk.length) {
+      console.log(`[download-zip] ${bytesToClient} bytes sent to client so far`);
+    }
+  });
+  passthrough.on("end", () => console.log(`[download-zip] passthrough ended, total ${bytesToClient} bytes`));
+  passthrough.on("error", (err) => console.error("[download-zip] passthrough error:", err));
+
   archive.pipe(passthrough);
   archive.on("error", (err) => {
-    console.error("Archive error:", err);
+    console.error("[download-zip] archive error:", err);
     passthrough.destroy(err);
   });
+  archive.on("entry", (entry) => console.log(`[download-zip] archive finished entry: ${entry.name}`));
+  archive.on("warning", (warn) => console.warn("[download-zip] archive warning:", warn));
 
   (async () => {
+    console.log("[download-zip] background loop starting");
     for (const f of files) {
       try {
+        console.log(`[download-zip] fetching ${f.filename} from R2`);
         const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: f.storageKey }));
+        console.log(`[download-zip] got R2 response for ${f.filename}, converting stream`);
         const webBody = await obj.Body!.transformToWebStream();
         const nodeStream = Readable.fromWeb(webBody as any);
+        console.log(`[download-zip] appending ${f.filename} to archive`);
         archive.append(nodeStream, { name: f.filename });
       } catch (err) {
-        console.error(`Failed to add ${f.filename} to zip:`, err);
+        console.error(`[download-zip] failed to add ${f.filename}:`, err);
       }
     }
+    console.log("[download-zip] all files appended, finalizing");
     archive.finalize();
-  })();
+  })().catch((err) => console.error("[download-zip] background loop crashed:", err));
 
   const webStream = Readable.toWeb(passthrough) as ReadableStream;
   const safeName = `${job.reference}-${kind.toLowerCase()}`.replace(/[^a-zA-Z0-9.\-_]/g, "_");
