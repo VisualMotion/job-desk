@@ -3,8 +3,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { jobScopeFor, SessionUser } from "@/lib/access";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import archiver from "archiver";
 import { Readable, PassThrough } from "stream";
+import https from "https";
 
 export const runtime = "nodejs";
 export const maxDuration = 800;
@@ -16,7 +18,11 @@ const s3 = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID!,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
   },
-  requestHandler: { requestTimeout: 30_000, connectionTimeout: 10_000 },
+  requestHandler: new NodeHttpHandler({
+    requestTimeout: 30_000,
+    connectionTimeout: 10_000,
+    httpsAgent: new https.Agent({ keepAlive: false }),
+  }),
 });
 const BUCKET = process.env.R2_BUCKET_NAME!;
 
@@ -77,10 +83,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     console.error("[download-zip] archive error:", err);
     passthrough.destroy(err);
   });
-  archive.on("warning", (warn) => console.warn("[download-zip] archive warning:", warn));
 
   (async () => {
-    console.log("[download-zip] background loop starting");
     for (const f of files) {
       try {
         const nodeStream = await fetchFileWithRetry(f.storageKey, f.filename);
@@ -89,7 +93,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         console.error(`[download-zip] giving up on ${f.filename} after retries:`, err);
       }
     }
-    console.log("[download-zip] all files appended, finalizing");
     archive.finalize();
   })().catch((err) => console.error("[download-zip] background loop crashed:", err));
 
