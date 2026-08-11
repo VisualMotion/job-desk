@@ -54,7 +54,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     for (const f of files) {
       try {
         const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: f.storageKey }));
-        archive.append(obj.Body as Readable, { name: f.filename });
+        const webBody = await obj.Body!.transformToWebStream();
+        const nodeStream = Readable.fromWeb(webBody as any);
+        archive.append(nodeStream, { name: f.filename });
       } catch (err) {
         console.error(`Failed to add ${f.filename} to zip:`, err);
       }
