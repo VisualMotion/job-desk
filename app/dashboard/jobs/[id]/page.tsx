@@ -56,31 +56,43 @@ export default function JobDetailPage() {
     if (!confirm(`Delete "${filename}"? This can't be undone.`)) return;
     setDeletingId(fileId);
     setFileError(null);
-    const res = await fetch(`/api/jobs/${id}/files/${fileId}`, { method: "DELETE" });
-    setDeletingId(null);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setFileError(body.error ?? `Couldn't delete "${filename}" (status ${res.status}).`);
-      return;
+    try {
+      const res = await fetch(`/api/jobs/${id}/files/${fileId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setFileError(body.error ?? `Couldn't delete "${filename}" (status ${res.status}).`);
+        return;
+      }
+      load();
+    } catch (err: any) {
+      console.error("Delete failed:", err);
+      setFileError(`Couldn't reach the server to delete "${filename}". Check your connection and try again.`);
+    } finally {
+      setDeletingId(null);
     }
-    load();
   }
 
   async function deleteAll(kind: "RAW" | "EDITED", count: number) {
     if (!confirm(`Delete all ${count} file(s) in this folder? This can't be undone.`)) return;
     setDeletingAll(kind);
     setFileError(null);
-    const res = await fetch(`/api/jobs/${id}/files`, {
-      method: "DELETE",
-      body: JSON.stringify({ kind }),
-    });
-    setDeletingAll(null);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setFileError(body.error ?? `Couldn't delete those files (status ${res.status}).`);
-      return;
+    try {
+      const res = await fetch(`/api/jobs/${id}/files`, {
+        method: "DELETE",
+        body: JSON.stringify({ kind }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setFileError(body.error ?? `Couldn't delete those files (status ${res.status}).`);
+        return;
+      }
+      load();
+    } catch (err: any) {
+      console.error("Delete all failed:", err);
+      setFileError(`Couldn't reach the server. Check your connection and try again.`);
+    } finally {
+      setDeletingAll(null);
     }
-    load();
   }
 
   async function markComplete() {
