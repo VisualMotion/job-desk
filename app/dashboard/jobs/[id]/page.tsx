@@ -24,6 +24,7 @@ export default function JobDetailPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState<"RAW" | "EDITED" | null>(null);
   const [deletingJob, setDeletingJob] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/jobs/${id}`);
@@ -54,19 +55,31 @@ export default function JobDetailPage() {
   async function deleteFile(fileId: string, filename: string) {
     if (!confirm(`Delete "${filename}"? This can't be undone.`)) return;
     setDeletingId(fileId);
-    await fetch(`/api/jobs/${id}/files/${fileId}`, { method: "DELETE" });
+    setFileError(null);
+    const res = await fetch(`/api/jobs/${id}/files/${fileId}`, { method: "DELETE" });
     setDeletingId(null);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setFileError(body.error ?? `Couldn't delete "${filename}" (status ${res.status}).`);
+      return;
+    }
     load();
   }
 
   async function deleteAll(kind: "RAW" | "EDITED", count: number) {
     if (!confirm(`Delete all ${count} file(s) in this folder? This can't be undone.`)) return;
     setDeletingAll(kind);
-    await fetch(`/api/jobs/${id}/files`, {
+    setFileError(null);
+    const res = await fetch(`/api/jobs/${id}/files`, {
       method: "DELETE",
       body: JSON.stringify({ kind }),
     });
     setDeletingAll(null);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setFileError(body.error ?? `Couldn't delete those files (status ${res.status}).`);
+      return;
+    }
     load();
   }
 
@@ -217,6 +230,7 @@ export default function JobDetailPage() {
             onDelete={canManageRaw ? deleteFile : undefined}
             deletingId={deletingId}
           />
+          {fileError && <p className="text-xs text-rust mt-2">{fileError}</p>}
           {canUploadRaw && (
             <div className="mt-3">
               <FileUploader jobId={job.id} jobReference={job.reference} kind="RAW" onUploaded={load} />
