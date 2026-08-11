@@ -7,7 +7,7 @@ import archiver from "archiver";
 import { Readable } from "stream";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 800;
 
 const s3 = new S3Client({
   region: "auto",
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "No files to download" }, { status: 400 });
   }
 
-  const archive = archiver("zip", { zlib: { level: 6 } });
+  const archive = archiver("zip", { store: true });
 
   (async () => {
     for (const f of files) {
