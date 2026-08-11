@@ -39,7 +39,7 @@ export async function getDownloadUrl(key: string, downloadFilename?: string) {
       ? `attachment; filename="${downloadFilename}"`
       : undefined,
   });
-  return getSignedUrl(s3, command, { expiresIn: 3600 }); // 1 hour - large raw batches take a while
+  return getSignedUrl(s3, command, { expiresIn: 43200 }); // 12 hours - covers a full working session with large raw batches
 }
 
 export async function deleteObject(key: string) {
