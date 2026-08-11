@@ -16,8 +16,24 @@ const s3 = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID!,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
   },
+  requestHandler: { requestTimeout: 30_000, connectionTimeout: 10_000 },
 });
 const BUCKET = process.env.R2_BUCKET_NAME!;
+
+async function fetchFileWithRetry(storageKey: string, filename: string, attempts = 3): Promise<Readable> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: storageKey }));
+      const webBody = await obj.Body!.transformToWebStream();
+      return Readable.fromWeb(webBody as any);
+    } catch (err) {
+      lastErr = err;
+      console.error(`[download-zip] attempt ${attempt}/${attempts} failed for ${filename}:`, err);
+    }
+  }
+  throw lastErr;
+}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -49,7 +65,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   let bytesToClient = 0;
   passthrough.on("data", (chunk) => {
     bytesToClient += chunk.length;
-    if (bytesToClient % 5_000_000 < chunk.length) {
+    if (bytesToClient % 20_000_000 < chunk.length) {
       console.log(`[download-zip] ${bytesToClient} bytes sent to client so far`);
     }
   });
@@ -61,22 +77,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     console.error("[download-zip] archive error:", err);
     passthrough.destroy(err);
   });
-  archive.on("entry", (entry) => console.log(`[download-zip] archive finished entry: ${entry.name}`));
   archive.on("warning", (warn) => console.warn("[download-zip] archive warning:", warn));
 
   (async () => {
     console.log("[download-zip] background loop starting");
     for (const f of files) {
       try {
-        console.log(`[download-zip] fetching ${f.filename} from R2`);
-        const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: f.storageKey }));
-        console.log(`[download-zip] got R2 response for ${f.filename}, converting stream`);
-        const webBody = await obj.Body!.transformToWebStream();
-        const nodeStream = Readable.fromWeb(webBody as any);
-        console.log(`[download-zip] appending ${f.filename} to archive`);
+        const nodeStream = await fetchFileWithRetry(f.storageKey, f.filename);
         archive.append(nodeStream, { name: f.filename });
       } catch (err) {
-        console.error(`[download-zip] failed to add ${f.filename}:`, err);
+        console.error(`[download-zip] giving up on ${f.filename} after retries:`, err);
       }
     }
     console.log("[download-zip] all files appended, finalizing");
