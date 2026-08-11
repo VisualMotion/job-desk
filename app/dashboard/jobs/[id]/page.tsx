@@ -70,11 +70,6 @@ export default function JobDetailPage() {
     load();
   }
 
-  async function afterRawUpload() {
-    await fetch(`/api/jobs/${id}/notify-supplier`, { method: "POST" });
-    load();
-  }
-
   async function markComplete() {
     setUpdating(true);
     await fetch(`/api/jobs/${id}/status`, {
@@ -224,7 +219,7 @@ export default function JobDetailPage() {
           />
           {canUploadRaw && (
             <div className="mt-3">
-              <FileUploader jobId={job.id} kind="RAW" onUploaded={afterRawUpload} />
+              <FileUploader jobId={job.id} jobReference={job.reference} kind="RAW" onUploaded={load} />
             </div>
           )}
         </section>
@@ -253,7 +248,7 @@ export default function JobDetailPage() {
           />
           {canUploadEdited && (
             <div className="mt-3">
-              <FileUploader jobId={job.id} kind="EDITED" onUploaded={load} />
+              <FileUploader jobId={job.id} jobReference={job.reference} kind="EDITED" onUploaded={load} />
             </div>
           )}
         </section>

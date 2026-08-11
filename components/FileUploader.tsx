@@ -1,107 +1,50 @@
 "use client";
 
-import { useState, useRef } from "react";
-
-const CONCURRENCY = 4;
+import { useEffect, useRef, useState } from "react";
+import { useUploadQueue } from "./UploadQueueContext";
 
 export default function FileUploader({
   jobId,
+  jobReference,
   kind,
   onUploaded,
 }: {
   jobId: string;
+  jobReference: string;
   kind: "RAW" | "EDITED";
   onUploaded: () => void;
 }) {
-  const [uploading, setUploading] = useState(false);
-  const [done, setDone] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const { batches, startUpload } = useUploadQueue();
+  const [trackedId, setTrackedId] = useState<string | null>(null);
   const filesInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const notifiedRef = useRef(false);
 
-  async function uploadOne(file: File) {
-    const relativePath = (file as any).webkitRelativePath || file.name;
+  useEffect(() => {
+    if (trackedId) return;
+    const existing = batches.find((b) => b.jobId === jobId && b.kind === kind && !b.finishedAt);
+    if (existing) setTrackedId(existing.id);
+  }, [batches, jobId, kind, trackedId]);
 
-    const presignRes = await fetch("/api/upload-url", {
-      method: "POST",
-      body: JSON.stringify({
-        jobId,
-        kind,
-        filename: relativePath,
-        contentType: file.type || "application/octet-stream",
-      }),
-    });
-    if (!presignRes.ok) {
-      throw new Error(`Couldn't get an upload link for ${relativePath} (status ${presignRes.status}).`);
-    }
-    const { uploadUrl, key } = await presignRes.json();
+  const current = batches.find((b) => b.id === trackedId);
 
-    const putRes = await fetch(uploadUrl, {
-      method: "PUT",
-      body: file,
-      headers: { "Content-Type": file.type || "application/octet-stream" },
-    });
-    if (!putRes.ok) {
-      throw new Error(
-        `Storage rejected ${relativePath} (status ${putRes.status}). This is usually a CORS setting on the bucket.`
-      );
-    }
-
-    const registerRes = await fetch(`/api/jobs/${jobId}/files`, {
-      method: "POST",
-      body: JSON.stringify({
-        kind,
-        filename: relativePath,
-        storageKey: key,
-        sizeBytes: file.size,
-        contentType: file.type,
-      }),
-    });
-    if (!registerRes.ok) {
-      throw new Error(`${relativePath} uploaded but couldn't be saved to the job record.`);
-    }
-  }
-
-  async function handleFiles(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) return;
-
-    const files = Array.from(fileList).filter((f) => !f.name.startsWith("."));
-    if (files.length === 0) return;
-
-    setUploading(true);
-    setError(null);
-    setDone(0);
-    setTotal(files.length);
-
-    let firstError: string | null = null;
-    let cursor = 0;
-
-    async function worker() {
-      while (cursor < files.length) {
-        const index = cursor++;
-        try {
-          await uploadOne(files[index]);
-        } catch (err: any) {
-          firstError = firstError ?? (err?.message ?? "Something went wrong during upload.");
-        } finally {
-          setDone((d) => d + 1);
-        }
-      }
-    }
-
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, files.length) }, worker));
-
-    setUploading(false);
-    if (filesInputRef.current) filesInputRef.current.value = "";
-    if (folderInputRef.current) folderInputRef.current.value = "";
-
-    if (firstError) {
-      setError(firstError);
-    } else {
+  useEffect(() => {
+    if (current?.finishedAt && !notifiedRef.current) {
+      notifiedRef.current = true;
       onUploaded();
     }
+  }, [current?.finishedAt, onUploaded]);
+
+  function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    notifiedRef.current = false;
+    const id = startUpload(jobId, jobReference, kind, fileList);
+    setTrackedId(id);
+    if (filesInputRef.current) filesInputRef.current.value = "";
+    if (folderInputRef.current) folderInputRef.current.value = "";
   }
+
+  const uploading = !!current && !current.finishedAt;
 
   return (
     <div>
@@ -134,12 +77,15 @@ export default function FileUploader({
         </label>
       </div>
 
-      {uploading && (
+      {current && (
         <p className="text-xs text-ink-soft mt-2">
-          Uploading {done} of {total}…
+          {current.finishedAt
+            ? current.error
+              ? `Finished with an error: ${current.error}`
+              : `Uploaded ${current.total} file${current.total === 1 ? "" : "s"}.`
+            : `Uploading ${current.done} of ${current.total}… (safe to switch jobs, this keeps going)`}
         </p>
       )}
-      {error && <p className="text-xs text-rust mt-2">{error}</p>}
     </div>
   );
 }
