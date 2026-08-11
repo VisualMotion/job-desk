@@ -1,0 +1,67 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { jobScopeFor, SessionUser } from "@/lib/access";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import archiver from "archiver";
+import { Readable } from "stream";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
+
+const s3 = new S3Client({
+  region: "auto",
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+});
+const BUCKET = process.env.R2_BUCKET_NAME!;
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const viewer = session.user as unknown as SessionUser;
+  const { id: jobId } = await params;
+
+  const kind = req.nextUrl.searchParams.get("kind");
+  if (kind !== "RAW" && kind !== "EDITED") {
+    return NextResponse.json({ error: "Invalid kind" }, { status: 400 });
+  }
+
+  const job = await prisma.job.findFirst({ where: { id: jobId, ...jobScopeFor(viewer) } });
+  if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const files = await prisma.jobFile.findMany({
+    where: { jobId, kind },
+    orderBy: { filename: "asc" },
+  });
+  if (files.length === 0) {
+    return NextResponse.json({ error: "No files to download" }, { status: 400 });
+  }
+
+  const archive = archiver("zip", { zlib: { level: 6 } });
+
+  (async () => {
+    for (const f of files) {
+      try {
+        const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: f.storageKey }));
+        archive.append(obj.Body as Readable, { name: f.filename });
+      } catch (err) {
+        console.error(`Failed to add ${f.filename} to zip:`, err);
+      }
+    }
+    archive.finalize();
+  })();
+
+  const webStream = Readable.toWeb(archive as unknown as Readable) as ReadableStream;
+  const safeName = `${job.reference}-${kind.toLowerCase()}`.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+
+  return new NextResponse(webStream, {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${safeName}.zip"`,
+    },
+  });
+}
