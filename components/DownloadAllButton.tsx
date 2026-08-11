@@ -12,11 +12,10 @@ export default function DownloadAllButton({
 }) {
   if (fileCount === 0) return null;
 
+  const url = `/api/jobs/${jobId}/download-zip?kind=${kind}`;
+
   return (
-    
-      href={`/api/jobs/${jobId}/download-zip?kind=${kind}`}
-      className="text-xs font-medium text-brass-deep hover:underline"
-    >
+    <a href={url} className="text-xs font-medium text-brass-deep hover:underline">
       Download all as ZIP ({fileCount})
     </a>
   );
