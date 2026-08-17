@@ -145,7 +145,7 @@ export default function JobDetailPage() {
 
   const canUploadRaw = (role === "OWNER" || role === "CONTRACTOR") && job.status !== "COMPLETED";
   const canManageRaw = role === "OWNER" || role === "CONTRACTOR";
-  const canUploadEdited = role === "SUPPLIER" && job.status !== "COMPLETED";
+  const canUploadEdited = role === "SUPPLIER";
   const canManageEdited = role === "OWNER" || role === "SUPPLIER";
 
   return (
