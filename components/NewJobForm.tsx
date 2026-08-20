@@ -12,6 +12,7 @@ export default function NewJobForm() {
   const [dueDate, setDueDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/users?role=SUPPLIER")
@@ -23,14 +24,28 @@ export default function NewJobForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    const res = await fetch("/api/jobs", {
-      method: "POST",
-      body: JSON.stringify({ title, supplierId, notes, dueDate: dueDate || undefined }),
-    });
-    setSubmitting(false);
-    if (res.ok) {
+    setError(null);
+    try {
+      const res = await fetch("/api/jobs", {
+        method: "POST",
+        body: JSON.stringify({ title, supplierId, notes, dueDate: dueDate || undefined }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(
+          typeof body.error === "string"
+            ? body.error
+            : `Couldn't create the job (status ${res.status}).`
+        );
+        return;
+      }
       const job = await res.json();
       router.push(`/dashboard/jobs/${job.id}`);
+    } catch (err: any) {
+      console.error("Job creation failed:", err);
+      setError("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -85,6 +100,11 @@ export default function NewJobForm() {
             </option>
           ))}
         </select>
+        {suppliers.length === 0 && (
+          <p className="text-xs text-rust mt-1">
+            No suppliers found. Add one under Accounts before creating a job.
+          </p>
+        )}
       </div>
 
       <div>
@@ -107,6 +127,8 @@ export default function NewJobForm() {
           className="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brass"
         />
       </div>
+
+      {error && <p className="text-sm text-rust">{error}</p>}
 
       <button
         type="submit"
